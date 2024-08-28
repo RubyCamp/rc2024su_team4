@@ -1,20 +1,19 @@
 require_relative 'card/base'
-require_relative 'card/spade'
-require_relative 'card/diamond'
-require_relative 'card/heart'
-require_relative 'card/club'
-require_relative 'card1/CPU'
-require_relative 'card1/end'
-require_relative 'card1/fight'
+require_relative 'card/gu'
+require_relative 'card/choki'
+require_relative 'card/pa'
+require_relative 'cpu'
+#require_relative 'fight'
 
 module Scenes
   module Game
     # ゲーム本編シーンの担当ディレクタークラス
     class Director < DirectorBase
-      SUIT_AMOUNT = 2 #13                # 各マーク毎のカード枚数
-      SUIT_DEC_AMOUNT = 1                # 各カードは1枚ずつ減る
-      CORRECTED_MESSAGE = "当たり！！"    # 開いた2枚のカードの番号が一致した場合（当たり）の表示メッセージ
-      INCORRECTED_MESSAGE = "ハズレ！！"  # 開いた2枚のカードの番号が一致しなかった場合（ハズレ）の表示メッセージ
+      SUIT_AMOUNT = 2                   # 各マーク毎のカード枚数
+      SUIT_DEC_AMOUNT = 1               # 各カードは1枚ずつ減る
+      WIN_MESSAGE = "WIN！！"           # 勝った場合の表示メッセージ
+      LOSE_MESSAGE = "LOSE！！"         # 負けた場合の表示メッセージ
+      HILIWAKE_MESSAGE = "DRAW！！"     # 引き分けた場合の表示メッセージ
       CORRECTED_SCORE = 10              # 当たりの際に追加される点数
       INCORRECTED_SCORE = 1             # ハズレの際に引かれる点数
       GAME_CLEAR_SCORE = 10             # ゲームクリアに必要な点数（サンプルのため、1回分の当たり点数と同じにしている）
@@ -41,8 +40,10 @@ module Scenes
         @gu_count = 2                                          # グーの回数制限
         @choki_count = 2                                       # チョキの回数制限
         @pa_count = 2                                          # パーの回数制限
-        @opened_card = nil
+        @opened_card = nil                                     # オープンになっているカードを保持する
         @opened_cards = []                                     # オープンになっているカードを保持する配列
+        @cpu_card = nil
+
         @message_display_frame_count = 0                       # メッセージ表示フレーム数のカウンタ変数
         @judgement_result = false                              # 当たり／ハズレの判定結果（true: 当たり）
         @score = 0                                             # 総得点
@@ -58,27 +59,30 @@ module Scenes
         1.upto(SUIT_AMOUNT) do |num|
           x = 290 + (Card::Base::WIDTH * 0) + 80 *0
           y = (MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
-          @cards_gu << Card::Spade.new(num, x, y, z)
+          @cards_gu << Card::Gu.new(num, x, y, z)
           z += 1
         end
         z = 1
         1.upto(SUIT_AMOUNT) do |num|
           x = 290 + (Card::Base::WIDTH * 1) + 80 * 1
           y = (MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
-          @cards_choki << Card::Diamond.new(num, x, y, z)
+          @cards_choki << Card::Choki.new(num, x, y, z)
           z += 1
         end
         z = 1
         1.upto(SUIT_AMOUNT) do |num|
           x = 290 + (Card::Base::WIDTH * 2) + 80 * 2
           y = (MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
-          @cards_pa << Card::Heart.new(num, x, y, z)
+          @cards_pa << Card::Pa.new(num, x, y, z)
           z += 1
         end
 
         @cards << @cards_gu
         @cards << @cards_choki
         @cards << @cards_pa
+
+        #CPUのインスタンスを生成
+        @cpu = CPU.new
       end
 
       # 1フレーム分の更新処理
@@ -159,23 +163,32 @@ module Scenes
         return if @opened_cards.size != 2 # 開かれているカードが2枚でなければ何もしない
 
         # 開かれた2枚のカードの合致判定
-        if @opened_cards.first.num == @opened_cards.last.num
+        if @opened_cards  == (["gu", "choki"] || ["choki", "pa"] || ["pa", "gu"])
           # 合致していた場合
           @judgement_result = true
           @score += CORRECTED_SCORE
-          @message_body = CORRECTED_MESSAGE
+          @message_body = WIN_MESSAGE
           @message_color = :blue
 
           # 加算後のスコアが条件を満たす場合、ゲームクリアフラグを立てる
           if @score >= GAME_CLEAR_SCORE
             @cleared = true
           end
+          puts "win"
+        elsif @opened_cards  == (["gu", "pa"] || ["choki", "gu"] || ["pa", "choki"])
+          # 合致していなかった場合
+          @judgement_result = false
+          @score -= INCORRECTED_SCORE
+          @message_body = LOSE_MESSAGE
+          @message_color = :red
+          puts "lose"
         else
           # 合致していなかった場合
           @judgement_result = false
           @score -= INCORRECTED_SCORE
-          @message_body = INCORRECTED_MESSAGE
+          @message_body = HILIWAKE_MESSAGE
           @message_color = :red
+          puts "hikiwake"
         end
 
         # 当たっても外れても、いずれにしてもメッセージは表示するので、メッセージ表示フレーム数を設定する
@@ -184,7 +197,7 @@ module Scenes
 
       # マウスによる操作判定
       def check_mouse_operations(mx, my)
-        return if @opened_card # @opened_cardにインスタンスが入っていればクリック処理をスキップ
+        #return if @opened_card # @opened_cardにインスタンスが入っていればクリック処理をスキップ
 
         if Gosu.button_down?(Gosu::MsLeft)
           # マウスの左ボタンがクリックされている場合
@@ -194,7 +207,7 @@ module Scenes
             @drag_start_pos = [mx, my]
           else
             # マウス左クリック＆ドラッグ開始済みであるため、ドラッグ中と判定し処理を実施する
-            # dragging(mx, my)
+            dragging(mx, my)
           end
         else
           # マウスの左ボタンが解放されている場合
@@ -221,7 +234,7 @@ module Scenes
         if clicked_cards.size > 0
           # マウス座標と被っているカードが1個以上ある場合、そのZ座標（重なり具合）でソートし、最も上にあるカードのみをオープンする
           @opened_card = clicked_cards.sort_by{|c| c.z }.last
-          # @opened_card.open
+          @opened_card.open
 
           # クリックされたカードの番号
           puts @opened_card.num
@@ -241,15 +254,15 @@ module Scenes
         end
 
         # オープンされたカードのインスタンスを判別してそのカードの枚数を減らす
-        if @opened_card.instance_of?(Card::Spade)
+        if @opened_card.instance_of?(Card::Gu)
           if @gu_count > 0
             @gu_count -= SUIT_DEC_AMOUNT
           end
-        elsif @opened_card.instance_of?(Card::Diamond)
+        elsif @opened_card.instance_of?(Card::Choki)
           if @choki_count > 0
             @choki_count -= SUIT_DEC_AMOUNT
           end
-        elsif @opened_card.instance_of?(Card::Heart)
+        elsif @opened_card.instance_of?(Card::Pa)
           if @pa_count > 0
             @pa_count -= SUIT_DEC_AMOUNT
           end
@@ -277,8 +290,23 @@ module Scenes
         return unless @opened_card
 
         # オープンされたカードが既にオープン済みでなければ、オープン済みカードリストに追加する
-        @opened_cards << @opened_card unless @opened_cards.include?(@opened_card)
+        unless @opened_cards.include?(@opened_card)
+          if @opened_card.instance_of?(Card::Gu)
+            @opened_cards << "gu"
+          elsif @opened_card.instance_of?(Card::Choki)
+            @opened_cards << "choki"
+          elsif @opened_card.instance_of?(Card::Pa)
+            @opened_cards << "pa"
+          end
+        end
+
+        # 選択したCPUのカードをオープン済みカードリストに追加する
+        @cpu_card = @cpu.randamu
+        @opened_cards << @cpu_card
+        puts @cpu_card
+
         @opened_card = nil
+        @cpu_card = nil
       end
 
       # 開いたカードの後始末を行う
@@ -287,7 +315,7 @@ module Scenes
         # * 一致した場合： 開いたカードを消去
         # * 一致しなかった場合： 開いたカードを閉じるのみ
         @opened_cards.each do |c|
-          c.reverse
+          #c.reverse
           @cards.delete(c) if @judgement_result
         end
 
