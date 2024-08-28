@@ -38,6 +38,7 @@ module Scenes
         @gu_count = 2                                          # グーの回数制限
         @choki_count = 2                                       # チョキの回数制限
         @pa_count = 2                                          # パーの回数制限
+        @opened_card = nil
         @opened_cards = []                                     # オープンになっているカードを保持する配列
         @message_display_frame_count = 0                       # メッセージ表示フレーム数のカウンタ変数
         @judgement_result = false                              # 当たり／ハズレの判定結果（true: 当たり）
@@ -180,6 +181,8 @@ module Scenes
 
       # マウスによる操作判定
       def check_mouse_operations(mx, my)
+        return if @opened_card # @opened_cardにインスタンスが入っていればクリック処理をスキップ
+
         if Gosu.button_down?(Gosu::MsLeft)
           # マウスの左ボタンがクリックされている場合
           unless @drag_start_pos
@@ -188,7 +191,7 @@ module Scenes
             @drag_start_pos = [mx, my]
           else
             # マウス左クリック＆ドラッグ開始済みであるため、ドラッグ中と判定し処理を実施する
-            dragging(mx, my)
+            # dragging(mx, my)
           end
         else
           # マウスの左ボタンが解放されている場合
@@ -224,6 +227,10 @@ module Scenes
           @cards.each do |card_x|
             @opened_card.z = (card_x.max_by{|c| c.z }).z + 1
           end
+
+          # オープンされたカードを移動させる
+          @opened_card.x = 260
+          @opened_card.y = 230
 
           # マウス座標とクリックされたカードの左上座標の差分をドラッグ時のオフセット値として保存する。
           @offset_mx = mx - @opened_card.x
