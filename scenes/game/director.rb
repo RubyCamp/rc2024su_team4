@@ -3,6 +3,9 @@ require_relative 'card/spade'
 require_relative 'card/diamond'
 require_relative 'card/heart'
 require_relative 'card/club'
+require_relative 'card1/CPU'
+require_relative 'card1/end'
+require_relative 'card1/fight'
 
 module Scenes
   module Game
@@ -137,15 +140,15 @@ module Scenes
         end
 
         # スコアを表示
-        draw_text("SCORE: #{@score}", :right, 5, font: :score, color: :white)
+        #draw_text("SCORE: #{@score}", :right, 5, font: :score, color: :white)
 
         # 残りカード枚数を表示
-        draw_text("グー: #{@gu_count}", :right, 50, font: :score, color: :black)
-        draw_text("チョキ: #{@choki_count}", :right, 100, font: :score, color: :black)
-        draw_text("パー: #{@pa_count}", :right, 150, font: :score, color: :black)
+        draw_text("グー: #{@gu_count}", :right, 200, font: :score, color: :black)
+        draw_text("チョキ: #{@choki_count}", :right, 250, font: :score, color: :black)
+        draw_text("パー: #{@pa_count}", :right, 300, font: :score, color: :black)
 
         # タイムリミットバーを表示
-        @timelimit_bar.draw(0, MainWindow::HEIGHT - @timelimit_bar.height, TIMELIMIT_BAR_Z_INDEX, @timelimit_scale)
+        #@timelimit_bar.draw(0, MainWindow::HEIGHT - @timelimit_bar.height, TIMELIMIT_BAR_Z_INDEX, @timelimit_scale)
       end
 
       private
@@ -252,6 +255,7 @@ module Scenes
           end
         end
       end
+
 
       # ドラッグ中に発生する処理
       def dragging(mx, my)
