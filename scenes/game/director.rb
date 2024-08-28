@@ -1,8 +1,7 @@
 require_relative 'card/base'
-require_relative 'card/spade'
-require_relative 'card/diamond'
-require_relative 'card/heart'
-require_relative 'card/club'
+require_relative 'card/gu'
+require_relative 'card/choki'
+require_relative 'card/pa'
 
 module Scenes
   module Game
@@ -55,21 +54,21 @@ module Scenes
         1.upto(SUIT_AMOUNT) do |num|
           x = 290 + (Card::Base::WIDTH * 0) + 80 *0
           y = (MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
-          @cards_gu << Card::Spade.new(num, x, y, z)
+          @cards_gu << Card::Gu.new(num, x, y, z)
           z += 1
         end
         z = 1
         1.upto(SUIT_AMOUNT) do |num|
           x = 290 + (Card::Base::WIDTH * 1) + 80 * 1
           y = (MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
-          @cards_choki << Card::Diamond.new(num, x, y, z)
+          @cards_choki << Card::Choki.new(num, x, y, z)
           z += 1
         end
         z = 1
         1.upto(SUIT_AMOUNT) do |num|
           x = 290 + (Card::Base::WIDTH * 2) + 80 * 2
           y = (MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
-          @cards_pa << Card::Heart.new(num, x, y, z)
+          @cards_pa << Card::Pa.new(num, x, y, z)
           z += 1
         end
 
@@ -238,15 +237,15 @@ module Scenes
         end
 
         # オープンされたカードのインスタンスを判別してそのカードの枚数を減らす
-        if @opened_card.instance_of?(Card::Spade)
+        if @opened_card.instance_of?(Card::Gu)
           if @gu_count > 0
             @gu_count -= SUIT_DEC_AMOUNT
           end
-        elsif @opened_card.instance_of?(Card::Diamond)
+        elsif @opened_card.instance_of?(Card::Choki)
           if @choki_count > 0
             @choki_count -= SUIT_DEC_AMOUNT
           end
-        elsif @opened_card.instance_of?(Card::Heart)
+        elsif @opened_card.instance_of?(Card::Pa)
           if @pa_count > 0
             @pa_count -= SUIT_DEC_AMOUNT
           end
