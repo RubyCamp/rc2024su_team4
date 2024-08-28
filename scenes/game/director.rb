@@ -218,7 +218,7 @@ module Scenes
         if clicked_cards.size > 0
           # マウス座標と被っているカードが1個以上ある場合、そのZ座標（重なり具合）でソートし、最も上にあるカードのみをオープンする
           @opened_card = clicked_cards.sort_by{|c| c.z }.last
-          @opened_card.open
+          # @opened_card.open
 
           # クリックされたカードの番号
           puts @opened_card.num
