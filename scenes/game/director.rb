@@ -8,7 +8,8 @@ module Scenes
   module Game
     # ゲーム本編シーンの担当ディレクタークラス
     class Director < DirectorBase
-      SUIT_AMOUNT = 13                  # 各マーク毎のカード枚数
+      SUIT_AMOUNT = 2 #13                # 各マーク毎のカード枚数
+      SUIT_DEC_AMOUNT = 1                # 各カードは1枚ずつ減る
       CORRECTED_MESSAGE = "当たり！！"    # 開いた2枚のカードの番号が一致した場合（当たり）の表示メッセージ
       INCORRECTED_MESSAGE = "ハズレ！！"  # 開いた2枚のカードの番号が一致しなかった場合（ハズレ）の表示メッセージ
       CORRECTED_SCORE = 10              # 当たりの際に追加される点数
@@ -31,6 +32,12 @@ module Scenes
 
         # 各種インスタンス変数の初期化
         @cards = []                                            # 全てのカードを保持する配列
+        @cards_gu = []                                         # グーのカードを保持する配列
+        @cards_choki = []                                      # チョキのカードを保持する配列
+        @cards_pa = []                                         # パーのカードを保持する配列
+        @gu_count = 2                                          # グーの回数制限
+        @choki_count = 2                                       # チョキの回数制限
+        @pa_count = 2                                          # パーの回数制限
         @opened_cards = []                                     # オープンになっているカードを保持する配列
         @message_display_frame_count = 0                       # メッセージ表示フレーム数のカウンタ変数
         @judgement_result = false                              # 当たり／ハズレの判定結果（true: 当たり）
@@ -42,22 +49,32 @@ module Scenes
         @offset_mx = 0                                         # マウスドラッグ中のカーソル座標補正用変数（X成分用）
         @offset_my = 0                                         # マウスドラッグ中のカーソル座標補正用変数（Y成分用）
 
-        # 4種のカードについて、それぞれ13枚ずつランダムな座標にカードをばら撒く
-        # NOTE: 各カードのZ値は、生成順に1から順にインクリメントして重ね合わせを表現する
+        # 3種類のカードを2枚ずつ配列にセット、配置
         z = 1
-        [
-          Card::Spade,
-          Card::Diamond,
-          Card::Heart,
-          Card::Club
-        ].each do |klass|
-          1.upto(SUIT_AMOUNT) do |num|
-            x = rand(MainWindow::WIDTH - Card::Base::WIDTH)
-            y = rand(MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
-            @cards << klass.new(num, x, y, z)
-            z += 1
-          end
+        1.upto(SUIT_AMOUNT) do |num|
+          x = 290 + (Card::Base::WIDTH * 0) + 80 *0
+          y = (MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
+          @cards_gu << Card::Spade.new(num, x, y, z)
+          z += 1
         end
+        z = 1
+        1.upto(SUIT_AMOUNT) do |num|
+          x = 290 + (Card::Base::WIDTH * 1) + 80 * 1
+          y = (MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
+          @cards_choki << Card::Diamond.new(num, x, y, z)
+          z += 1
+        end
+        z = 1
+        1.upto(SUIT_AMOUNT) do |num|
+          x = 290 + (Card::Base::WIDTH * 2) + 80 * 2
+          y = (MainWindow::HEIGHT - Card::Base::HEIGHT - @timelimit_bar.height - TIMELIMIT_BAR_MARGIN)
+          @cards_pa << Card::Heart.new(num, x, y, z)
+          z += 1
+        end
+
+        @cards << @cards_gu
+        @cards << @cards_choki
+        @cards << @cards_pa
       end
 
       # 1フレーム分の更新処理
@@ -107,8 +124,10 @@ module Scenes
 
         # 全カードを表示
         # NOTE: 重なり合わせを適正に表現するため、各カードの最新Z値でソートして表示する（マウスクリックでカードのZ値が変化するため）
-        @cards.sort_by{|c| c.z }.each do |card|
-          card.draw
+        @cards.each do |card_x|
+          card_x.sort_by{|c| c.z }.each do |card|
+            card.draw
+          end
         end
 
         # メッセージ表示フレーム数が2以上の場合はメッセージを表示する
@@ -119,6 +138,11 @@ module Scenes
         # スコアを表示
         draw_text("SCORE: #{@score}", :right, 5, font: :score, color: :white)
 
+        # 残りカード枚数を表示
+        draw_text("グー: #{@gu_count}", :right, 50, font: :score, color: :black)
+        draw_text("チョキ: #{@choki_count}", :right, 100, font: :score, color: :black)
+        draw_text("パー: #{@pa_count}", :right, 150, font: :score, color: :black)
+
         # タイムリミットバーを表示
         @timelimit_bar.draw(0, MainWindow::HEIGHT - @timelimit_bar.height, TIMELIMIT_BAR_Z_INDEX, @timelimit_scale)
       end
@@ -126,6 +150,7 @@ module Scenes
       private
 
       # 2枚のカードがオープンされた状況における当たり／ハズレ判定処理
+      # 勝敗判定はここで改造する
       def judgement
         return if @opened_cards.size != 2 # 開かれているカードが2枚でなければ何もしない
 
@@ -180,8 +205,10 @@ module Scenes
         clicked_cards = []
 
         # 全カードに対して、現在のマウス座標が自身の表示エリアに被っているか判定させ、被っているカードを配列に納めていく
-        @cards.each do |card|
-          clicked_cards << card if card.clicked?(mx, my)
+        @cards.each do |card_x|
+          card_x.each do |card|
+            clicked_cards << card if card.clicked?(mx, my)
+          end
         end
 
         # マウスカーソルの座標上に1枚以上カードが存在する場合
@@ -190,12 +217,32 @@ module Scenes
           @opened_card = clicked_cards.sort_by{|c| c.z }.last
           @opened_card.open
 
+          # クリックされたカードの番号
+          puts @opened_card.num
+
           # クリックされたカードのZ値を、全てのカードに対して最大化する（一番上に重なるようにする）
-          @opened_card.z = @cards.max_by{|c| c.z }.z + 1
+          @cards.each do |card_x|
+            @opened_card.z = (card_x.max_by{|c| c.z }).z + 1
+          end
 
           # マウス座標とクリックされたカードの左上座標の差分をドラッグ時のオフセット値として保存する。
           @offset_mx = mx - @opened_card.x
           @offset_my = my - @opened_card.y
+        end
+
+        # オープンされたカードのインスタンスを判別してそのカードの枚数を減らす
+        if @opened_card.instance_of?(Card::Spade)
+          if @gu_count > 0
+            @gu_count -= SUIT_DEC_AMOUNT
+          end
+        elsif @opened_card.instance_of?(Card::Diamond)
+          if @choki_count > 0
+            @choki_count -= SUIT_DEC_AMOUNT
+          end
+        elsif @opened_card.instance_of?(Card::Heart)
+          if @pa_count > 0
+            @pa_count -= SUIT_DEC_AMOUNT
+          end
         end
       end
 
