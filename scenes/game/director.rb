@@ -110,12 +110,12 @@ module Scenes
 
         # ゲームクリアフラグが立ち、且つ画面への判定結果表示が完了済みの場合、エンディングシーンへ切り替えを行う
         if @cleared && @message_display_frame_count == 0
-         transition(:ending)
+          transition(:ending)
         end
 
         # タイムラインバーの長さが0になったらゲームオーバーとする
         #if @timelimit_scale <= 0
-         # @bgm.stop if @bgm && @bgm.playing?
+          # @bgm.stop if @bgm && @bgm.playing?
           #transition(:game_over)
         #end
 
@@ -215,7 +215,7 @@ module Scenes
             @cleared = true
           end
           puts "win"
-        elsif @opened_cards  == ["gu", "pa"] || @opened_cards ==["choki", "gu"] || @opened_cards ==["pa", "choki"]
+        elsif @opened_cards == ["gu", "pa"] || @opened_cards == ["choki", "gu"] || @opened_cards == ["pa", "choki"]
           # 合致していなかった場合
           @judgement_result = false
           @score += INCORRECTED_SCORE
