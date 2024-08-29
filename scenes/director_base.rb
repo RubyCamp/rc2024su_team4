@@ -61,7 +61,7 @@ module Scenes
     end
 
     # シーン切り替えの実行
-    def transition(label)
+    def transition(label,options = {})
       Scenes::Manager.instance.set(label.to_sym)
     end
 
