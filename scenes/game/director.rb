@@ -130,7 +130,7 @@ module Scenes
 
         # タイムラインバーの長さが0になったらゲームオーバーとする
         #if @timelimit_scale <= 0
-         # @bgm.stop if @bgm && @bgm.playing?
+          # @bgm.stop if @bgm && @bgm.playing?
           #transition(:game_over)
         #end
 
@@ -167,9 +167,6 @@ module Scenes
         @enemy.draw
         @me.draw
 
-        
-        
-      
         # 全カードを表示
         # NOTE: 重なり合わせを適正に表現するため、各カードの最新Z値でソートして表示する（マウスクリックでカードのZ値が変化するため）
         @cards.each do |card_x|
@@ -225,7 +222,7 @@ module Scenes
             @cleared = true
           end
           puts "win"
-        elsif @opened_cards  == ["gu", "pa"] || @opened_cards ==["choki", "gu"] || @opened_cards ==["pa", "choki"]
+        elsif @opened_cards == ["gu", "pa"] || @opened_cards == ["choki", "gu"] || @opened_cards == ["pa", "choki"]
           # 合致していなかった場合
           @judgement_result = false
           @score += INCORRECTED_SCORE
@@ -239,7 +236,6 @@ module Scenes
             @hantei = 2
             transition(:ending,hantei: @hantei)
           end
-
           @enemy.add_star
           @message_color = :red
           puts "lose"
