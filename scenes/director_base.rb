@@ -62,7 +62,8 @@ module Scenes
 
     # シーン切り替えの実行
     def transition(label,options = {})
-      Scenes::Manager.instance.set(label.to_sym)
+      p [:options, options]
+      Scenes::Manager.instance.set(label.to_sym,options)
     end
 
     # 文字列描画におけるX座標の変換処理

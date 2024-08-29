@@ -4,12 +4,12 @@ module Scenes
     class Director < DirectorBase
       # コンストラクタ
       def initialize(hantei: 0)
-        super()
+        super()  # 親クラスのinitializeを呼び出す
         @lose_img = Gosu::Image.new("images/lose.jpg", tileable: true)
         @win_img = Gosu::Image.new("images/win.jpg", tileable: true)
         @hikiwake_img = Gosu::Image.new("images/draw.jpg", tileable: true)
         @bgm = load_bgm("bgm3.mp3", 0.3)
-        @hantei = hantei
+        @hantei = hantei  # 引数で受け取った値をインスタンス変数に設定
       end
 
       # 1フレーム分の更新処理
@@ -19,12 +19,12 @@ module Scenes
 
       # 1フレーム分の描画処理
       def draw
-        puts "Hantei value: #{@hantei}"  # デバッグ出力
-        if @hantei == 1
+        case @hantei
+        when 1
           @lose_img.draw(0, 0, 0)
-        elsif @hantei == 2
+        when 2
           @win_img.draw(0, 0, 0)
-        else
+        when 0
           @hikiwake_img.draw(0, 0, 0)
         end
       end
