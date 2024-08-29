@@ -3,7 +3,6 @@ require_relative 'card/gu'
 require_relative 'card/choki'
 require_relative 'card/pa'
 require_relative 'cpu'
-#require_relative 'fight'
 require_relative 'card/enemy'
 require_relative 'card/me'
 
@@ -190,6 +189,8 @@ module Scenes
 
         # タイムリミットバーを表示
         #@timelimit_bar.draw(0, MainWindow::HEIGHT - @timelimit_bar.height, TIMELIMIT_BAR_Z_INDEX, @timelimit_scale)
+
+        @cpu.draw
       end
 
       private
