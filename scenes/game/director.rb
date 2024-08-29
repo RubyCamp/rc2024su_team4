@@ -4,6 +4,8 @@ require_relative 'card/choki'
 require_relative 'card/pa'
 require_relative 'cpu'
 #require_relative 'fight'
+require_relative 'card/enemy'
+require_relative 'card/me'
 
 module Scenes
   module Game
@@ -14,9 +16,9 @@ module Scenes
       WIN_MESSAGE = "WIN！！"           # 勝った場合の表示メッセージ
       LOSE_MESSAGE = "LOSE！！"         # 負けた場合の表示メッセージ
       HILIWAKE_MESSAGE = "DRAW！！"     # 引き分けた場合の表示メッセージ
-      CORRECTED_SCORE = 10              # 当たりの際に追加される点数
+      CORRECTED_SCORE = 1              # 当たりの際に追加される点数
       INCORRECTED_SCORE = 1             # ハズレの際に引かれる点数
-      GAME_CLEAR_SCORE = 10             # ゲームクリアに必要な点数（サンプルのため、1回分の当たり点数と同じにしている）
+      GAME_CLEAR_SCORE = 6            # ゲームクリアに必要な点数（サンプルのため、1回分の当たり点数と同じにしている）
       MESSAGE_DISPLAY_FRAMES = 60       # 当たり／ハズレのメッセージを画面上に表示しておくフレーム数（60フレーム＝2秒）
       JUDGEMENT_MESSAGE_Y_POS = 250     # 当たり／ハズレのメッセージを表示するY座標
       TIMELIMIT_BAR_Z_INDEX = 3500      # 当たり／ハズレのメッセージを表示するZ座標（奥行）
@@ -24,6 +26,7 @@ module Scenes
       TIMELIMIT_BAR_MARGIN = 5          # タイムリミットバーの表示上の余白サイズ（ピクセル）
       FPS = 30                          # 1秒間の表示フレーム数
 
+      attr_accessor :hantei
       # コンストラクタ
       def initialize
         super
@@ -31,6 +34,16 @@ module Scenes
         @bg_img = Gosu::Image.new("images/bg_game.png", tileable: true)
         @timelimit_bar = Gosu::Image.new("images/timelimit_bar.png", tileable: true)
         @bgm = load_bgm("bgm2.mp3", 0.1)
+        @CPUhand_img = Gosu::Image.new("images/hatena.jpg",tileable: true)
+
+        @pa = Gosu::Image.new("images/Ruby_10.jpg",tileable: true)
+        @gu = Gosu::Image.new("images/Ruby_11.jpg",tileable: true)
+        @tyoki = Gosu::Image.new("images/Ruby_9.jpg",tileable: true)
+        
+        
+        @disp_flg = false
+        @me = Me.new
+        @enemy = Enemy.new
 
         # 各種インスタンス変数の初期化
         @cards = []                                            # 全てのカードを保持する配列
@@ -53,6 +66,7 @@ module Scenes
         @drag_start_pos = nil                                  # マウスドラッグ用フラグ兼ドラッグ開始位置記憶用変数
         @offset_mx = 0                                         # マウスドラッグ中のカーソル座標補正用変数（X成分用）
         @offset_my = 0                                         # マウスドラッグ中のカーソル座標補正用変数（Y成分用）
+        @score_x = 0 
 
         # 3種類のカードを2枚ずつ配列にセット、配置
         z = 1
@@ -96,15 +110,14 @@ module Scenes
 
         # ゲームクリアフラグが立ち、且つ画面への判定結果表示が完了済みの場合、エンディングシーンへ切り替えを行う
         if @cleared && @message_display_frame_count == 0
-          @bgm.stop if @bgm && @bgm.playing?
-          transition(:ending)
+         transition(:ending)
         end
 
         # タイムラインバーの長さが0になったらゲームオーバーとする
-        if @timelimit_scale <= 0
-          @bgm.stop if @bgm && @bgm.playing?
-          transition(:game_over)
-        end
+        #if @timelimit_scale <= 0
+         # @bgm.stop if @bgm && @bgm.playing?
+          #transition(:game_over)
+        #end
 
         # メッセージ表示中とそれ以外で処理を分岐
         if @message_display_frame_count > 0
@@ -129,7 +142,31 @@ module Scenes
       def draw
         # 背景画像を表示
         @bg_img.draw(0, 0, 0)
+        @CPUhand_img.draw(60,8,0)
+        @CPUhand_img.draw(230,8,0)
+        @CPUhand_img.draw(400,8,0)
 
+        @gu.draw(285,444,5)
+        @tyoki.draw(455,444,5)
+        @pa.draw(630,444,5)
+        @enemy.draw
+        @me.draw
+
+        if @score == 6 && @message_display_frame_count == 0
+          if @score_x == 0
+            @hantei = 0
+            puts "Setting hantei to 0 before transition"
+          elsif @score_x < 0
+            @hantei = 1
+            puts "Setting hantei to 1 before transition"
+          elsif @score_x > 0
+            @hantei = 2
+            puts "Setting hantei to 2 before transition"
+          end
+          transition(:ending, hantei: @hantei)
+        end
+        
+      
         # 全カードを表示
         # NOTE: 重なり合わせを適正に表現するため、各カードの最新Z値でソートして表示する（マウスクリックでカードのZ値が変化するため）
         @cards.each do |card_x|
@@ -144,15 +181,15 @@ module Scenes
         end
 
         # スコアを表示
-        draw_text("SCORE: #{@score}", :right, 5, font: :score, color: :white)
+        #draw_text("SCORE: #{@score_x}", :right, 5, font: :score, color: :white)
 
         # 残りカード枚数を表示
-        draw_text("グー: #{@gu_count}", :right, 50, font: :score, color: :black)
-        draw_text("チョキ: #{@choki_count}", :right, 100, font: :score, color: :black)
-        draw_text("パー: #{@pa_count}", :right, 150, font: :score, color: :black)
+        draw_text("グー: #{@gu_count}", :right, 200, font: :score, color: :black)
+        draw_text("チョキ: #{@choki_count}", :right, 250, font: :score, color: :black)
+        draw_text("パー: #{@pa_count}", :right, 300, font: :score, color: :black)
 
         # タイムリミットバーを表示
-        @timelimit_bar.draw(0, MainWindow::HEIGHT - @timelimit_bar.height, TIMELIMIT_BAR_Z_INDEX, @timelimit_scale)
+        #@timelimit_bar.draw(0, MainWindow::HEIGHT - @timelimit_bar.height, TIMELIMIT_BAR_Z_INDEX, @timelimit_scale)
       end
 
       private
@@ -163,10 +200,13 @@ module Scenes
         return if @opened_cards.size != 2 # 開かれているカードが2枚でなければ何もしない
 
         # 開かれた2枚のカードの合致判定
-        if @opened_cards  == (["gu", "choki"] || ["choki", "pa"] || ["pa", "gu"])
+        if @opened_cards == ["gu", "choki"] || @opened_cards == ["choki", "pa"] || @opened_cards == ["pa", "gu"]
           # 合致していた場合
           @judgement_result = true
           @score += CORRECTED_SCORE
+          @score_x += 1
+          @me.add_star
+          @enemy.sub_star
           @message_body = WIN_MESSAGE
           @message_color = :blue
 
@@ -175,18 +215,22 @@ module Scenes
             @cleared = true
           end
           puts "win"
-        elsif @opened_cards  == (["gu", "pa"] || ["choki", "gu"] || ["pa", "choki"])
+        elsif @opened_cards  == ["gu", "pa"] || @opened_cards ==["choki", "gu"] || @opened_cards ==["pa", "choki"]
           # 合致していなかった場合
           @judgement_result = false
-          @score -= INCORRECTED_SCORE
+          @score += INCORRECTED_SCORE
           @message_body = LOSE_MESSAGE
+          @score_x -= 1
+          @me.sub_star
+          @enemy.add_star
           @message_color = :red
           puts "lose"
         else
           # 合致していなかった場合
           @judgement_result = false
-          @score -= INCORRECTED_SCORE
+          @score += INCORRECTED_SCORE
           @message_body = HILIWAKE_MESSAGE
+          
           @message_color = :red
           puts "hikiwake"
         end
@@ -268,6 +312,7 @@ module Scenes
           end
         end
       end
+
 
       # ドラッグ中に発生する処理
       def dragging(mx, my)
