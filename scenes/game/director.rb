@@ -67,6 +67,7 @@ module Scenes
         @offset_mx = 0                                         # マウスドラッグ中のカーソル座標補正用変数（X成分用）
         @offset_my = 0                                         # マウスドラッグ中のカーソル座標補正用変数（Y成分用）
         @score_x = 0 
+        @score_y = 0
 
         # 3種類のカードを2枚ずつ配列にセット、配置
         z = 1
@@ -108,10 +109,24 @@ module Scenes
         mx = opt.has_key?(:mx) ? opt[:mx] : 0
         my = opt.has_key?(:my) ? opt[:my] : 0
 
-        # ゲームクリアフラグが立ち、且つ画面への判定結果表示が完了済みの場合、エンディングシーンへ切り替えを行う
-        if @cleared && @message_display_frame_count == 0
-         transition(:ending)
+        if @score == 6 && @message_display_frame_count == 0
+          if @score_x == 0
+            @hantei = 0
+            puts "Setting hantei to 0 before transition"
+          elsif @score_x < 0
+            @hantei = 1
+            puts "Setting hantei to 1 before transition"
+          elsif @score_x > 0
+            @hantei = 2
+            puts "Setting hantei to 2 before transition"
+          end
+          transition(:ending, hantei: @hantei)
         end
+
+        # ゲームクリアフラグが立ち、且つ画面への判定結果表示が完了済みの場合、エンディングシーンへ切り替えを行う
+        #if @cleared && @message_display_frame_count == 0
+        # transition(:ending)
+        #end
 
         # タイムラインバーの長さが0になったらゲームオーバーとする
         #if @timelimit_scale <= 0
@@ -152,19 +167,7 @@ module Scenes
         @enemy.draw
         @me.draw
 
-        if @score == 6 && @message_display_frame_count == 0
-          if @score_x == 0
-            @hantei = 0
-            puts "Setting hantei to 0 before transition"
-          elsif @score_x < 0
-            @hantei = 1
-            puts "Setting hantei to 1 before transition"
-          elsif @score_x > 0
-            @hantei = 2
-            puts "Setting hantei to 2 before transition"
-          end
-          transition(:ending, hantei: @hantei)
-        end
+        
         
       
         # 全カードを表示
@@ -205,7 +208,14 @@ module Scenes
           @judgement_result = true
           @score += CORRECTED_SCORE
           @score_x += 1
-          @me.add_star
+          #@me.add_star
+          if  @me.add_star
+            @score_y += 1
+          end
+          if @score_y == 3 && @message_display_frame_count == 0
+            @hantei = 2
+            transition(:ending,hantei: @hantei)
+          end
           @enemy.sub_star
           @message_body = WIN_MESSAGE
           @message_color = :blue
@@ -221,7 +231,15 @@ module Scenes
           @score += INCORRECTED_SCORE
           @message_body = LOSE_MESSAGE
           @score_x -= 1
-          @me.sub_star
+          #@me.sub_star
+          if  @me.sub_star
+            @score_y -= 1
+          end
+          if @score_y == -3 && @message_display_frame_count == 0
+            @hantei = 2
+            transition(:ending,hantei: @hantei)
+          end
+
           @enemy.add_star
           @message_color = :red
           puts "lose"
@@ -349,7 +367,7 @@ module Scenes
         @opened_cards << @cpu_card
         puts @cpu_card
 
-        @opened_card = nil
+        @opened_card = nil  
         @cpu_card = nil
       end
 

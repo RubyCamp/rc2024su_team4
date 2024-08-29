@@ -18,9 +18,19 @@ module Scenes
     end
 
     # カレントシーンの切り替え
-    def set(label)
+    def set(label,options={})
       @current = label.to_sym
+      @crrent_scene = create_scene(label,options)
     end
+
+    def create_scene(label, options = {})
+      case label
+      when :ending
+        Scenes::Ending::Director.new(**options) # optionsを渡す
+      # 他のシーンも同様に処理
+      end
+    end
+    
 
     # ある1フレームの場面更新処理の呼び出し
     def update(opt = {})
@@ -35,6 +45,8 @@ module Scenes
     end
 
     private
+     
+    
 
     # カレントシーンのラベルとそれに対応するディレクターオブジェクトが実在するかどうかの判定
     def validate_current
